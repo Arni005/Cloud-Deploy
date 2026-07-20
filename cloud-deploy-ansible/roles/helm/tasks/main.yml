@@ -1,0 +1,82 @@
+---
+- name: Install Helm
+  ansible.builtin.shell: |
+    curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+  args:
+    creates: /usr/local/bin/helm
+
+- name: Add Nginx Ingress helm repo
+  ansible.builtin.shell: |
+    helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+    helm repo update
+
+- name: Install Nginx Ingress Controller
+  ansible.builtin.shell: |
+    helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
+      --namespace ingress-nginx \
+      --create-namespace \
+      --set controller.hostNetwork=true \
+      --set controller.hostPort.enabled=true \
+      --set controller.service.type=ClusterIP
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+
+- name: Add cert-manager helm repo
+  ansible.builtin.shell: |
+    helm repo add jetstack https://charts.jetstack.io
+    helm repo update
+
+- name: Install cert-manager
+  ansible.builtin.shell: |
+    helm upgrade --install cert-manager jetstack/cert-manager \
+      --namespace cert-manager \
+      --create-namespace \
+      --set installCRDs=true
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+
+- name: Add Prometheus helm repo
+  ansible.builtin.shell: |
+    helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+    helm repo update
+
+- name: Install Prometheus and Grafana stack
+  ansible.builtin.shell: |
+    helm upgrade --install prometheus-stack prometheus-community/kube-prometheus-stack \
+      --namespace monitoring \
+      --create-namespace
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+
+- name: Copy ClusterIssuer manifest
+  ansible.builtin.copy:
+    src: clusterissuer.yml
+    dest: /tmp/clusterissuer.yml
+
+- name: Wait for cert-manager to be ready
+  ansible.builtin.shell: |
+    kubectl wait --namespace cert-manager \
+      --for=condition=ready pod \
+      --selector=app.kubernetes.io/instance=cert-manager \
+      --timeout=120s
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+
+- name: Apply ClusterIssuer
+  ansible.builtin.shell: |
+    kubectl apply -f /tmp/clusterissuer.yml
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+
+
+
+- name: Create Docker Hub imagePullSecret
+  ansible.builtin.shell: |
+    kubectl create secret docker-registry dockerhub-secret \
+      --docker-username={{ dockerhub_username }} \
+      --docker-password={{ dockerhub_token }} \
+      --docker-server=https://index.docker.io/v1/ \
+      --namespace=default \
+      --dry-run=client -o yaml | kubectl apply -f -
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml        

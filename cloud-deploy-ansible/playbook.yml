@@ -1,0 +1,7 @@
+---
+- name: Setup K3s server
+  hosts: master
+  become: true
+  roles:
+    - k3s_server
+    - helm
