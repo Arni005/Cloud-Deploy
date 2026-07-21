@@ -30,16 +30,19 @@
   ansible.builtin.debug:
     msg: "K3s token is: {{ k3s_token.content | b64decode | trim }}"
 
-- name: Get kubeconfig
-  ansible.builtin.fetch:
-    src: /etc/rancher/k3s/k3s.yaml
-    dest: ~/.kube/config
-    flat: yes
+- name: Read and fix kubeconfig on server
+  ansible.builtin.shell: |
+    cat /etc/rancher/k3s/k3s.yaml | \
+    sed 's|https://127.0.0.1:6443|https://{{ ansible_host }}:6443|g' | \
+    sed 's|https://localhost:6443|https://{{ ansible_host }}:6443|g'
+  register: kubeconfig_content
 
-- name: Fix kubeconfig server address
-  ansible.builtin.replace:
-    path: ~/.kube/config
-    regexp: '127\.0\.0\.1'
-    replace: "{{ ansible_host }}"
+- name: Write fixed kubeconfig to local machine
   delegate_to: localhost
   become: false
+  ansible.builtin.shell: |
+    mkdir -p ~/.kube
+    cat > ~/.kube/config << 'KUBEEOF'
+    {{ kubeconfig_content.stdout }}
+    KUBEEOF
+    chmod 600 ~/.kube/config
