@@ -216,6 +216,7 @@ terraform destroy
 
 ```
 Cloud-Deploy/
+├── README.md
 ├── cloud-deploy-infra/
 │   ├── vpc.tf
 │   ├── security_group.tf
@@ -239,7 +240,7 @@ Cloud-Deploy/
             ├── tasks/
             │   └── main.yml
             └── files/
-                └── clusterissuer.yml
-└──  README.md              
+                └── clusterissuer.yml 
+
 ```
 
