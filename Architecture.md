@@ -2,7 +2,7 @@
 
 CloudDeploy is a Platform as a Service (PaaS) that automatically deploys 
 user applications from GitHub repositories — similar to Render or Railway. 
-Users paste a GitHub URL, and CloudShip handles everything from building 
+Users paste a GitHub URL, and CloudDeploy handles everything from building 
 the Docker image to serving the app over HTTPS with a live URL.
 
 ---
