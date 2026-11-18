@@ -12,5 +12,17 @@ variable "region" {
 variable "ami_id" {
   description = "AMI ID for EC2 instances"
   type        = string
-  default     = "ami-0c809520a0d652e03"
+  default     = "ami-09d8c1e69d114dbf7"
+}
+
+variable "server_instance_type" {
+  description = "EC2 instance type for the K3s server"
+  type        = string
+  default     = "c7i-flex.large"
+}
+
+variable "worker_instance_type" {
+  description = "EC2 instance type for K3s workers"
+  type        = string
+  default     = "t3.small"
 }
